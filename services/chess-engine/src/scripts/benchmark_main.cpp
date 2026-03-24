@@ -6,7 +6,9 @@
 
 #include "position/board_factory.hpp"
 #include "position/position.hpp"
+#include "position/bb_position.hpp"
 #include "search/search.hpp"
+#include "search/search_bb.hpp"
 #include "core/move.hpp"
 #include "core/types.hpp"
 
@@ -84,20 +86,47 @@ static void run_one(BoardType type, int depth, int repetitions) {
               << "\n";
 }
 
+static void run_bb(int depth, int repetitions) {
+    using clock = std::chrono::steady_clock;
+
+    long long total_ms = 0;
+    SearchResult last_result{};
+
+    for (int i = 0; i < repetitions; ++i) {
+        BitboardPosition pos = BitboardPosition::startpos();
+
+        auto t0 = clock::now();
+        last_result = SearchBB::minimax(pos, depth);
+        auto t1 = clock::now();
+
+        total_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    }
+
+    double avg_ms = static_cast<double>(total_ms) / repetitions;
+
+    std::cout << "BitboardPosition | depth=" << depth
+              << " | reps=" << repetitions
+              << " | best=" << move_to_string(last_result.best)
+              << " | score=" << last_result.score
+              << " | avg_ms=" << avg_ms
+              << "\n";
+}
+
 } // namespace chess
 
 int main() {
     using namespace chess;
 
-    int depth = 3;
-    int repetitions = 5;
+    int depth = 5;
+    int repetitions = 3;
 
-    std::cout << "Backend comparison benchmark\n";
-    std::cout << "----------------------------\n";
+    std::cout << "Backend comparison benchmark (depth=" << depth << ")\n";
+    std::cout << "-----------------------------------------------\n";
 
     run_one(BoardType::Array, depth, repetitions);
     run_one(BoardType::Pointer, depth, repetitions);
     run_one(BoardType::Bitboard, depth, repetitions);
+    run_bb(depth, repetitions);
 
     return 0;
 }

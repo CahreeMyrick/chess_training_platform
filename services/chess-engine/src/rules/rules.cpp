@@ -1,4 +1,5 @@
 #include "rules/rules.hpp"
+#include "attacks/attacks.hpp"
 #include <cstdlib>
 
 namespace chess {
@@ -343,36 +344,37 @@ static bool knight_attack(int from, int to) {
 }
 
 bool Rules::is_square_attacked(const Position& pos, int sq, Color by) {
+    // Pawns: squares from which a pawn of color 'by' attacks sq are given by
+    // pawn(other(by), sq) — the reverse-lookup trick.
     {
-        int f = file_of(sq);
-        int r = rank_of(sq);
-
-        if (by == Color::White) {
-            int r_from = r - 1;
-            if (r_from >= 0) {
-                if (f - 1 >= 0 && pos.at(make_sq(f - 1, r_from)) == Piece::WP) return true;
-                if (f + 1 < 8  && pos.at(make_sq(f + 1, r_from)) == Piece::WP) return true;
-            }
-        } else {
-            int r_from = r + 1;
-            if (r_from < 8) {
-                if (f - 1 >= 0 && pos.at(make_sq(f - 1, r_from)) == Piece::BP) return true;
-                if (f + 1 < 8  && pos.at(make_sq(f + 1, r_from)) == Piece::BP) return true;
-            }
+        Piece pawn_pc = (by == Color::White) ? Piece::WP : Piece::BP;
+        uint64_t from_squares = attacks::pawn(other(by), sq);
+        while (from_squares) {
+            int from = __builtin_ctzll(from_squares);
+            from_squares &= from_squares - 1;
+            if (pos.at(from) == pawn_pc) return true;
         }
     }
 
+    // Knights: table lookup limits candidates to at most 8 squares.
     {
         Piece knight = (by == Color::White) ? Piece::WN : Piece::BN;
-        for (int from = 0; from < 64; ++from) {
-            if (pos.at(from) == knight && knight_attack(from, sq)) return true;
+        uint64_t candidates = attacks::knight(sq);
+        while (candidates) {
+            int from = __builtin_ctzll(candidates);
+            candidates &= candidates - 1;
+            if (pos.at(from) == knight) return true;
         }
     }
 
+    // King: table lookup limits candidates to at most 8 squares.
     {
         Piece king = (by == Color::White) ? Piece::WK : Piece::BK;
-        for (int from = 0; from < 64; ++from) {
-            if (pos.at(from) == king && adjacent(from, sq)) return true;
+        uint64_t candidates = attacks::king(sq);
+        while (candidates) {
+            int from = __builtin_ctzll(candidates);
+            candidates &= candidates - 1;
+            if (pos.at(from) == king) return true;
         }
     }
 

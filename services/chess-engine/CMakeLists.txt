@@ -5,16 +5,19 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CHESS_ENGINE_SOURCES
+    src/attacks/attacks.cpp
     src/position/array_board.cpp
     src/position/position.cpp
     src/position/pointer_board.cpp
     src/position/piece.cpp
     src/position/bitboard.cpp
+    src/position/bb_position.cpp
     src/position/board_factory.cpp
     src/rules/rules.cpp
     src/movegen/movegen.cpp
     src/evaluation/eval.cpp
     src/search/search.cpp
+    src/search/search_bb.cpp
     src/render/render.cpp
 )
 

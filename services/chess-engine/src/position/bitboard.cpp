@@ -2,52 +2,52 @@
 
 namespace chess {
 
-Bitboard::Bitboard() = default;
+Bitboard::Bitboard() {
+    for (int i = 0; i < 64; ++i) mailbox_[i] = Piece::Empty;
+}
 
 uint64_t Bitboard::bit(int sq) {
     return 1ULL << sq;
 }
 
 void Bitboard::clear_all_at(int sq) {
+    Piece existing = mailbox_[sq];
+    if (existing == Piece::Empty) return;
+
     uint64_t mask = ~bit(sq);
 
-    wp_ &= mask;
-    wn_ &= mask;
-    wb_ &= mask;
-    wr_ &= mask;
-    wq_ &= mask;
-    wk_ &= mask;
+    // Clear the specific piece bitboard
+    switch (existing) {
+        case Piece::WP: wp_ &= mask; break;
+        case Piece::WN: wn_ &= mask; break;
+        case Piece::WB: wb_ &= mask; break;
+        case Piece::WR: wr_ &= mask; break;
+        case Piece::WQ: wq_ &= mask; break;
+        case Piece::WK: wk_ &= mask; break;
+        case Piece::BP: bp_ &= mask; break;
+        case Piece::BN: bn_ &= mask; break;
+        case Piece::BB: bb_ &= mask; break;
+        case Piece::BR: br_ &= mask; break;
+        case Piece::BQ: bq_ &= mask; break;
+        case Piece::BK: bk_ &= mask; break;
+        default: break;
+    }
 
-    bp_ &= mask;
-    bn_ &= mask;
-    bb_ &= mask;
-    br_ &= mask;
-    bq_ &= mask;
-    bk_ &= mask;
+    // Update occupancy
+    int ci = is_white(existing) ? 0 : 1;
+    occ_[ci]  &= mask;
+    occ_all_  &= mask;
+
+    mailbox_[sq] = Piece::Empty;
 }
 
 Piece Bitboard::piece_at(int sq) const {
-    uint64_t b = bit(sq);
-
-    if (wp_ & b) return Piece::WP;
-    if (wn_ & b) return Piece::WN;
-    if (wb_ & b) return Piece::WB;
-    if (wr_ & b) return Piece::WR;
-    if (wq_ & b) return Piece::WQ;
-    if (wk_ & b) return Piece::WK;
-
-    if (bp_ & b) return Piece::BP;
-    if (bn_ & b) return Piece::BN;
-    if (bb_ & b) return Piece::BB;
-    if (br_ & b) return Piece::BR;
-    if (bq_ & b) return Piece::BQ;
-    if (bk_ & b) return Piece::BK;
-
-    return Piece::Empty;
+    return mailbox_[sq];
 }
 
 void Bitboard::set_piece(int sq, Piece p) {
     clear_all_at(sq);
+    if (p == Piece::Empty) return;
 
     uint64_t b = bit(sq);
 
@@ -58,18 +58,20 @@ void Bitboard::set_piece(int sq, Piece p) {
         case Piece::WR: wr_ |= b; break;
         case Piece::WQ: wq_ |= b; break;
         case Piece::WK: wk_ |= b; break;
-
         case Piece::BP: bp_ |= b; break;
         case Piece::BN: bn_ |= b; break;
         case Piece::BB: bb_ |= b; break;
         case Piece::BR: br_ |= b; break;
         case Piece::BQ: bq_ |= b; break;
         case Piece::BK: bk_ |= b; break;
-
-        case Piece::Empty:
-        default:
-            break;
+        default: break;
     }
+
+    int ci = is_white(p) ? 0 : 1;
+    occ_[ci]  |= b;
+    occ_all_  |= b;
+
+    mailbox_[sq] = p;
 }
 
 void Bitboard::clear_square(int sq) {
